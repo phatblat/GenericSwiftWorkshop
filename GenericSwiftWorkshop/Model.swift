@@ -49,7 +49,7 @@ struct User: Identified, Hashable {
     let name: String
 }
 
-struct Document: Codable, Hashable {
+struct Document: Identified, Hashable {
     typealias ID = Identifier<Document, String>
     let id: ID
     let title: String

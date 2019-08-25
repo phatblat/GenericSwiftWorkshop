@@ -16,7 +16,7 @@ extension URLSessionTask: Cancellable {}
 
 // Making this a PAT means we can't have an array of them
 protocol Fetchable: Decodable {
-    associatedtype ID: IDType
+    associatedtype ID: Identified
     var id: ID { get }
     static var apiBase: String { get }
 }
