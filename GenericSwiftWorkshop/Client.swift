@@ -8,13 +8,25 @@
 
 import Foundation
 
+protocol Fetchable: Decodable {
+    static var apiBase: String { get }
+}
+
+extension User: Fetchable {
+    static var apiBase: String { return "user" }
+}
+
+extension Document: Fetchable {
+    static var apiBase: String { return "document" }
+}
+
 final class Client {
     let baseURL = URL(string: "file:///")!
     
     /// GET /user/<id>
-    func fetchUser(id: Int, completion: @escaping (Result<User, Error>) -> Void) -> URLSessionTask {
+    func fetch<Model: Fetchable>(id: Int, completion: @escaping (Result<Model, Error>) -> Void) -> URLSessionTask {
         let urlRequest = URLRequest(url: baseURL
-            .appendingPathComponent("user")
+            .appendingPathComponent(Model.apiBase)
             .appendingPathComponent("\(id)")
         )
         
@@ -26,7 +38,7 @@ final class Client {
             } else if let data = data {
                 let decoder = JSONDecoder()
                 completion(Result {
-                    try decoder.decode(User.self, from: data)
+                    try decoder.decode(Model.self, from: data)
                 })
             }
         }
@@ -34,3 +46,8 @@ final class Client {
         return task
     }
 }
+
+//let client = Client()
+//client.fetch(User.self, id: 1) { (_) in
+//
+//}
