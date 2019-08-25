@@ -42,21 +42,26 @@ extension URLSession: Transport {
     }
 }
 
+var defaultTransport: Transport = URLSession.shared
+//extension Transport {
+//    static var `default`: Transport { return URLSession.shared }
+//}
+
 final class Client {
     let baseURL = URL(string: "file:///")!
     let transport: Transport
-    
-    init(transport: Transport = URLSession.shared) {
+
+    init(transport: Transport = defaultTransport) {
         self.transport = transport
     }
-    
+
     /// GET /user/<id>
     func fetch<Model: Fetchable>(_: Model.Type, id: Int, completion: @escaping (Result<Model, Error>) -> Void) -> Cancellable {
         let urlRequest = URLRequest(url: baseURL
             .appendingPathComponent(Model.apiBase)
             .appendingPathComponent("\(id)")
         )
-        
+
         return transport.send(request: urlRequest) { data in
             let decoder = JSONDecoder()
             completion(Result {
@@ -70,3 +75,22 @@ final class Client {
 //client.fetch(User.self, id: 1) { (_) in
 //
 //}
+
+final class AddHeadersTransport: Transport {
+    let base: Transport
+    var headers: [String: String]
+
+    init(transport: Transport = URLSession.shared) {
+        self.base = transport
+        headers = [:]
+    }
+
+    func send(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void) -> Cancellable {
+        var newRequest = request
+        for (key, value) in headers {
+            newRequest.addValue(value, forHTTPHeaderField: key)
+        }
+
+        return base.send(request: request, completion: completion)
+    }
+}
