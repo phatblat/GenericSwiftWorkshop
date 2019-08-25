@@ -14,7 +14,7 @@ protocol Processor {
     func process(from input: Input) -> Output
 }
 
-struct AnyProcessor<Input, Output> {
+struct AnyProcessor<Input, Output>: Processor {
     let base: Any
 
     private let _process: (Input) -> Output
