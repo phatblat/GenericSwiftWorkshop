@@ -44,13 +44,13 @@ protocol Identified: Codable {
 }
 
 struct User: Identified, Hashable {
-    typealias ID = Identifier<User, Int>
+    typealias ID = Identifier<Self, Int>
     let id: ID
     let name: String
 }
 
 struct Document: Identified, Hashable {
-    typealias ID = Identifier<Document, String>
+    typealias ID = Identifier<Self, String>
     let id: ID
     let title: String
 }
