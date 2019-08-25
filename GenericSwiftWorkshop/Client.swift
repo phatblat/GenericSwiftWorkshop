@@ -42,7 +42,8 @@ extension URLSession: Transport {
     }
 }
 
-var defaultTransport: Transport = URLSession.shared
+var defaultTransport: Transport = TransportRef(URLSession.shared)
+
 //extension Transport {
 //    static var `default`: Transport { return URLSession.shared }
 //}
@@ -92,5 +93,15 @@ final class AddHeadersTransport: Transport {
         }
 
         return base.send(request: request, completion: completion)
+    }
+}
+
+
+/// Turns a value type into a reference type
+final class TransportRef: Transport {
+    var base: Transport
+    init(_ base: Transport) { self.base = base }
+    func send(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void) -> Cancellable {
+        base.send(request: request, completion: completion)
     }
 }
