@@ -8,6 +8,12 @@
 
 import Foundation
 
+protocol Cancellable {
+    func cancel()
+}
+
+extension URLSessionTask: Cancellable {}
+
 protocol Fetchable: Decodable {
     static var apiBase: String { get }
 }
@@ -20,30 +26,43 @@ extension Document: Fetchable {
     static var apiBase: String { return "document" }
 }
 
+protocol Transport {
+    func send(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void) -> Cancellable
+}
+
+extension URLSession: Transport {
+    func send(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void) -> Cancellable {
+        let task = dataTask(with: request) { (data, _, error) in
+            if let error = error { completion(.failure(error)) }
+            else if let data = data { completion(.success(data)) }
+            else { assertionFailure("Unexpected neither error or data.") }
+        }
+        task.resume()
+        return task
+    }
+}
+
 final class Client {
     let baseURL = URL(string: "file:///")!
+    let transport: Transport
+    
+    init(transport: Transport = URLSession.shared) {
+        self.transport = transport
+    }
     
     /// GET /user/<id>
-    func fetch<Model: Fetchable>(id: Int, completion: @escaping (Result<Model, Error>) -> Void) -> URLSessionTask {
+    func fetch<Model: Fetchable>(_: Model.Type, id: Int, completion: @escaping (Result<Model, Error>) -> Void) -> Cancellable {
         let urlRequest = URLRequest(url: baseURL
             .appendingPathComponent(Model.apiBase)
             .appendingPathComponent("\(id)")
         )
         
-        let session = URLSession.shared
-        
-        let task = session.dataTask(with: urlRequest) { (data, _, error) in
-            if let error = error {
-                completion(.failure(error))
-            } else if let data = data {
-                let decoder = JSONDecoder()
-                completion(Result {
-                    try decoder.decode(Model.self, from: data)
-                })
-            }
+        return transport.send(request: urlRequest) { data in
+            let decoder = JSONDecoder()
+            completion(Result {
+                try decoder.decode(Model.self, from: data.get())
+            })
         }
-        task.resume()
-        return task
     }
 }
 
