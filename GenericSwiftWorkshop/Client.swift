@@ -14,7 +14,10 @@ protocol Cancellable {
 
 extension URLSessionTask: Cancellable {}
 
+// Making this a PAT means we can't have an array of them
 protocol Fetchable: Decodable {
+    associatedtype ID: IDType
+    var id: ID { get }
     static var apiBase: String { get }
 }
 
@@ -57,7 +60,8 @@ final class Client {
     }
 
     /// GET /user/<id>
-    func fetch<Model: Fetchable>(_: Model.Type, id: Int, completion: @escaping (Result<Model, Error>) -> Void) -> Cancellable {
+    func fetch<Model: Fetchable>(_: Model.Type = Model.self, id: Model.ID,
+                                 completion: @escaping (Result<Model, Error>) -> Void) -> Cancellable {
         let urlRequest = URLRequest(url: baseURL
             .appendingPathComponent(Model.apiBase)
             .appendingPathComponent("\(id)")
@@ -72,9 +76,18 @@ final class Client {
     }
 }
 
+// Generic function
+// gets specialized by compiler for all types used
+// T must be concrete type
+func process<T: Transport>(transport: T) {}
+
+// Takes an existential
+// compiler can't optimize for eech type of transport
+func process(transport: Transport) {}
+
 //let client = Client()
-//client.fetch(User.self, id: 1) { (_) in
-//
+//client.fetch(User.self, id: User.ID(1)) { (Result<Fetchable, Error>) in
+//    <#code#>
 //}
 
 /// Nested transport which adds headers

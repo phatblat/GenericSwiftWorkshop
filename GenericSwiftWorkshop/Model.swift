@@ -8,12 +8,26 @@
 
 import Foundation
 
+protocol IDType: Codable, Hashable {
+    associatedtype Value
+    var value: Value { get }
+    init(value: Value)
+}
+
+extension IDType {
+    init(_ value: Value) { self.init(value: value) }
+}
+
 struct User: Codable, Hashable {
-    let id: Int
+    struct ID: IDType { let value: Int }
+    let id: ID
     let name: String
 }
 
 struct Document: Codable, Hashable {
-    let id: Int
+    struct ID: IDType { let value: String }
+    let id: ID
     let title: String
 }
+
+let user = User(id: User.ID(1), name: "Alice")
