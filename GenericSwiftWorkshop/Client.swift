@@ -45,6 +45,34 @@ extension URLSession: Transport {
     }
 }
 
+
+let baseURL = URL(string: "file:///")!
+
+struct Request {
+    let urlRequest: URLRequest
+    let completion: (Result<Data, Error>) -> Void
+
+    static func fetching<Model: Fetchable>(id: Model.ID,
+                                          completion: @escaping(Result<Model, Error>) -> Void) -> Request {
+        let urlRequest = URLRequest(url: baseURL
+            .appendingPathComponent(Model.apiBase)
+            .appendingPathComponent("\(id)")
+        )
+
+        return self.init(urlRequest: urlRequest) { data in
+            let decoder = JSONDecoder()
+            completion(Result {
+                try decoder.decode(Model.self, from: data.get())
+            })
+        }
+    }
+}
+
+//let request = Request.fetching<Model, Fetchable>(
+//    id: Model.ID
+//    completion: @escaping
+//)
+
 var defaultTransport: Transport = TransportRef(URLSession.shared)
 
 //extension Transport {
@@ -52,7 +80,6 @@ var defaultTransport: Transport = TransportRef(URLSession.shared)
 //}
 
 final class Client {
-    let baseURL = URL(string: "file:///")!
     let transport: Transport
 
     init(transport: Transport = defaultTransport) {
@@ -60,18 +87,23 @@ final class Client {
     }
 
     /// GET /user/<id>
-    func fetch<Model: Fetchable>(_: Model.Type = Model.self, id: Model.ID,
-                                 completion: @escaping (Result<Model, Error>) -> Void) -> Cancellable {
-        let urlRequest = URLRequest(url: baseURL
-            .appendingPathComponent(Model.apiBase)
-            .appendingPathComponent("\(id)")
-        )
+    func fetch<Model: Fetchable>(id: Model.ID,
+                                 completion: @escaping (Result<Model, Error>) -> Void) {
+    }
 
-        return transport.send(request: urlRequest) { data in
-            let decoder = JSONDecoder()
-            completion(Result {
-                try decoder.decode(Model.self, from: data.get())
-            })
+    // POST /keepalive -> Error?
+    // -> Result<Void, Error>
+    func keepalive(
+        completion: @escaping (Error?) -> Void) {
+        var urlRequest = URLRequest(url: baseURL
+            .appendingPathComponent("keepalive"))
+        urlRequest.httpMethod = "POST"
+
+        transport.send(request: urlRequest) {
+            switch $0 {
+            case .success: completion(nil)
+            case .failure(let error): completion(error)
+            }
         }
     }
 }
