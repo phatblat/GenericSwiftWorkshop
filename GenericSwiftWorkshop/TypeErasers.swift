@@ -15,21 +15,39 @@ protocol Processor {
 }
 
 struct AnyProcessor<Input, Output>: Processor {
-    let base: Any
+    private class _BoxBase<Input, Output>: Processor {
+        var base: Any { fatalError() }
+        func process(from input: Input) -> Output {
+            fatalError()
+        }
+    }
 
-    private let _process: (Input) -> Output
-
-    init<P: Processor>(_ processor: P)
+    private class _Box<P: Processor>: _BoxBase<Input, Output>
     where
         P.Input == Input,
         P.Output == Output
     {
-        _process = processor.process
-        base = processor
+        let _base: P
+        init(_ base: P) { self._base = base }
+
+        override func process(from input: Input) -> Output {
+            return _base.process(from: input)
+        }
+    }
+
+    var base: Any { _box.base }
+    private var _box: _BoxBase<Input, Output>
+
+    init<P: Processor>(_ base: P)
+    where
+        P.Input == Input,
+        P.Output == Output
+    {
+        self._box = _Box(base)
     }
 
     func process(from input: Input) -> Output {
-        return _process(input)
+        return self._box.process(from: input)
     }
 }
 
