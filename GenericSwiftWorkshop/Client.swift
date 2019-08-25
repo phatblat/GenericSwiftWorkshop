@@ -77,6 +77,7 @@ final class Client {
 //
 //}
 
+/// Nested transport which adds headers
 final class AddHeadersTransport: Transport {
     let base: Transport
     var headers: [String: String]
