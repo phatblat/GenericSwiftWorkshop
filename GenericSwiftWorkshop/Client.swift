@@ -99,7 +99,7 @@ final class Client {
             .appendingPathComponent("keepalive"))
         urlRequest.httpMethod = "POST"
 
-        transport.send(request: urlRequest) {
+        _ = transport.send(request: urlRequest) {
             switch $0 {
             case .success: completion(nil)
             case .failure(let error): completion(error)
